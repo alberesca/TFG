@@ -1,0 +1,207 @@
+close all
+clear all
+%NPR_exp_compleja_fases_aleatorias_2_tonos
+Amp = [1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1];
+fase=[pi*rand pi*rand pi*rand pi*rand pi*rand pi*rand pi*rand pi*rand pi*rand pi*rand pi*rand pi*rand pi*rand pi*rand pi*rand pi*rand pi*rand pi*rand pi*rand pi*rand];
+fase_aleatoria=fase;
+fsHz = 125*1e6;
+dt = 1/fsHz;
+index = 1;
+index2 = 2;
+sine_pos = [;];
+sine_neg=[;];
+answer = questdlg('¿Quieres tono en 0?');
+num = 'Numero de tonos';
+num_Tonos= input(num);
+N =  8192;
+tfin=1/fsHz*N;
+faxis = linspace(-fsHz/2,fsHz/2,N);
+%variable auxiliar para poner todas las señales en paralelo y comprobar la continuidad de fase.
+time=0:dt:tfin;
+if strcmp(answer,'Yes')
+    
+for n=1:round(num_Tonos/2)
+    freqHz = (n)*1e6; %Tonos Separados 1MHz
+    %freqHz = (+4*n)*1e6; %tonos separados 4MHz
+%     fase=rand;
+for t = 0:dt:tfin %Construimos la señal discreta
+   sine_pos(n+1,index) = Amp(n) * exp(1i*2*pi*freqHz*t + 1i*fase_aleatoria(n+1));
+%    fase(n)
+   
+%    sampleNumber(index) = index;
+sine_pos(1,index)= Amp(n) * exp(1i*fase_aleatoria(n+1));
+   index = index + 1;
+   
+end
+ index=1;
+ index2=2;
+ 
+ %Hacemos la FFT de N muestras 
+    y=fft(sine_pos(n,:),N)/N;
+    Y=abs(y);
+    figure(1)
+    plot(faxis/1e6,fftshift(20*log10(Y)));
+    title ('FFT of the generated Tones')
+    %axis([0 40 0 4.5*1e-3])
+    xlabel('Frequency (MHz)')
+    hold on
+end
+for n=1:round(num_Tonos/2)
+     freqHz = (-1*n)*1e6; %Tonos espaciados 1MHz
+   %freqHz = (-4*n)*1e6; %Tonos espaciados 4MHz
+%     fase=rand;
+for t = 0:dt:tfin %Construimos la señal discreta
+   sine_neg(n,index) = Amp(n) * exp(1i*2*pi*freqHz*t + 1i*fase_aleatoria(n+1));
+   sine_neg(round(num_Tonos/2)+1,index) = Amp(n) * exp(1i*fase_aleatoria(n+1));
+%    sampleNumber(index) = index;
+   index = index + 1;
+end
+ index=1;
+
+%Hacemos la FFT de N muestras 
+    y=fft(sine_neg(n,:),N)/N;
+    Y=abs(y);
+    figure(2)
+    plot(faxis/1e6,fftshift(20*log10(Y)));
+    title ('FFT of the generated Tones')
+    %axis([0 40 0 4.5*1e-3])
+    xlabel('Frequency (MHz)')
+    hold on
+end
+
+sine_tot=sine_pos + sine_neg;
+
+suma=zeros(1,length(sine_tot));
+for n=1:length(sine_tot)
+    for p=1:round(num_Tonos/2)
+        suma(n)=sine_tot(p,n)+suma(n);
+    end
+
+end
+N_suma=N;
+faxis_suma = linspace(-fsHz/2,fsHz/2,N_suma);
+
+y_suma=fft(suma,N_suma)/N_suma;
+Y_suma=20*log10(abs(y_suma));
+figure(3)
+plot(faxis_suma/1e6,fftshift(Y_suma));
+title('FFT of the sum of the tones in time')
+grid on
+xlabel('Frequency (MHz)'); ylabel('(dB)');
+axis([-20 20 -60 -20])
+figure(4)
+plot(0:dt:tfin,abs(suma).*cos(2*pi*200e6*(0:dt:tfin)),'linewidth',2)
+grid on
+title('Time domain tones modulated by a 200 MHz carrier')
+% alternative to the above loop
+% sine = Amp*sin(2*pi*freq*(0:dt:1-dt));
+
+% Comprobar continuidad de fase
+rep_suma=zeros(1,3*length(suma)); %Matriz cuadrada de 3 filas (3 réplicas de la señal) y tantas columnas
+% como muestras tenga suma
+rep_suma=suma;
+rep_suma(length(suma)+1:2*length(suma))=suma;
+rep_suma((2*length(suma)+1):3*length(suma))=suma;
+figure(5)
+plot(0*dt:dt:3*tfin +2*dt,abs(rep_suma))
+title ('Muestras de la señal replicada')
+figure(6)
+plot(faxis_suma/1e6,fftshift(20*log10(abs(fft(rep_suma,N_suma)))))
+xlabel('Frecuencia (MHz)')
+title('FFT de la señal replicada')
+
+s=suma;
+vector_a_agilent(s,'NPR_TFG_conTonoCentral')
+elseif strcmp(answer,'No')
+    for n=1:round(num_Tonos/2)
+     freqHz = (n)*1e6; %Tonos Separados 1MHz
+%     freqHz = (+4*n)*1e6; %tonos separados 4MHz
+%     fase=rand;
+            for t = 0:dt:tfin %Construimos la señal discreta
+            sine_pos(n,index) = Amp(n) * exp(1i*2*pi*freqHz*t + 1i*fase_aleatoria(n+1));
+            %    fase(n)
+   
+            %    sampleNumber(index) = index;
+            index = index + 1;
+            end
+             index=1;
+ 
+ %Hacemos la FFT de N muestras 
+    y=fft(sine_pos(n,:),N)/N;
+    Y=abs(y);
+    figure(1)
+    plot(faxis/1e6,fftshift(20*log10(Y)));
+    title ('FFT de los tonos generados')
+    %axis([0 40 0 4.5*1e-3])
+    xlabel('Frequency (MHz)')
+    hold on
+    end
+for n=1:round(num_Tonos/2)
+    freqHz = (-1*n)*1e6; %Tonos espaciados 1MHz
+%     freqHz = (-4*n)*1e6; %Tonos espaciados 4MHz
+%     fase=rand;
+for t = 0:dt:tfin %Construimos la señal discreta
+   sine_neg(n,index) = Amp(n) * exp(1i*2*pi*freqHz*t + 1i*fase_aleatoria(n+1));
+   
+%    sampleNumber(index) = index;
+   index = index + 1;
+end
+ index=1;
+
+%Hacemos la FFT de N muestras 
+    y=fft(sine_neg(n,:),N)/N;
+    Y=abs(y);
+    figure(2)
+    plot(faxis/1e6,fftshift(20*log10(Y)));
+    title ('FFT de los tonos generados')
+    %axis([0 40 0 4.5*1e-3])
+    xlabel('Frequency (MHz)')
+    hold on
+end
+
+sine_tot=sine_pos + sine_neg;
+
+suma=zeros(1,length(sine_tot));
+for n=1:length(sine_tot)
+    for p=1:round(num_Tonos/2)
+        suma(n)=sine_tot(p,n)+suma(n);
+    end
+
+end
+N_suma=N;
+faxis_suma = linspace(-fsHz/2,fsHz/2,N_suma);
+
+y_suma=fft(suma,N_suma)/N_suma;
+Y_suma=20*log10(abs(y_suma));
+figure(3)
+plot(faxis_suma/1e6,fftshift(Y_suma));
+title('FFT of the sum of the tones in time')
+grid on
+xlabel('Frequency (MHz)'); ylabel('(dB)');
+axis([-20 20 -60 -20])
+figure(4)
+plot(0:dt:tfin,abs(suma).*cos(2*pi*200e6*(0:dt:tfin)),'linewidth',2)
+grid on
+title('Time domain tones modulated by a 200 MHz carrier')
+% alternative to the above loop
+% sine = Amp*sin(2*pi*freq*(0:dt:1-dt));
+
+% Comprobar continuidad de fase
+rep_suma=zeros(1,3*length(suma)); %Matriz cuadrada de 3 filas (3 réplicas de la señal) y tantas columnas
+% como muestras tenga suma
+rep_suma=suma;
+rep_suma(length(suma)+1:2*length(suma))=suma;
+rep_suma((2*length(suma)+1):3*length(suma))=suma;
+figure(5)
+plot(0*dt:dt:3*tfin +2*dt,abs(rep_suma))
+title ('Samples of the replicated signal')
+figure(6)
+plot(faxis_suma/1e6,fftshift(20*log10(abs(fft(rep_suma,N_suma)))))
+xlabel('Frecuencia (MHz)')
+title('FTT of the Signal')
+
+s=suma;
+vector_a_agilent(s,'NPR_TFG_sinTonoCentral')
+else
+    disp('repite la acción')
+end
